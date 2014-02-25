@@ -9,6 +9,6 @@
  * If it isn't a JPG file, return -1 and print nothing.
  */
 int analyze_jpg(FILE *f) {
-    /* YOU WRITE THIS PART */
-    return -1;
+  /* YOU WRITE THIS PART */
+  return -1;
 }
