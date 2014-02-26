@@ -8,20 +8,25 @@ long int chunk_length(char* buffer) {
   char *buffer2;
   //int *digits;
   //digits = (int *) malloc(4*sizeof(int));
+  printf("Buffer is: %X %X %X %X\n", buffer[0], buffer[1], buffer[2], buffer[3]);
   buffer2 = (char *) malloc(4*sizeof(char));
-  int length = 0;
-  /* Converts the hex in buffer to ints in char array */
-  sprintf(buffer2, "%d%d%d%d", buffer[0], buffer[1], buffer[2], buffer[3]);
-  /* Converts the ints in char array to int array */
-  //printf("%ld\n", strtol(buffer, NULL, 0));
-  //printf("%X\n", buffer);
-  //sscanf(buffer2, "%d %d %d %d", &digits[0], &digits[1], &digits[2], &digits[3]);
-  //printf("%d:%d:%d:%d\n", digits[0], digits[1], digits[2], digits[3]);
-  //length = digits[0] + (digits[1] * 16) + (digits[2] * 256) + (digits[3] * 2096);
-  length = atoi(buffer2);
-  printf("atoi length: %d\n", length);
+  sprintf(buffer2, "%02X%02X%02X%02X", buffer[0], buffer[1], buffer[2], buffer[3]);
+  long int length = 0;
+  printf("Buffer2 is: %s\n", buffer2); 
+  char *end;
+  long int lint0 = strtol(buffer2, &end, 16);
+  //long int lint1 = strtol(end, &end, 0);
+  //long int lint2 = strtol(end, &end, 0);
+  //long int lint3 = strtol(end, &end, 0);
+  
+  printf("Value is: %ld\n", lint0);
+  //printf("Values are: %ld, %ld, %ld, %ld\n", lint0, lint1, lint2, lint3);  
+  //length = lint3 + (lint2 * 16) + (lint1 * 256) + (lint0 * 2096);
+  //length = atoi(buffer2);
+  printf("atoi length: %ld\n", length);
   //free(digits);
-  free(buffer2);
+  //free(buffer2);
+  getchar();
   return length;
 }
 
@@ -40,17 +45,17 @@ int analyze_chunks(FILE *f) {
   //char chunktype[4];
   int chunklength;  
   while(fread(length, 1, 4, f) == 4) {
-    int i = 0;
+    //int i = 0;
     chunklength = chunk_length(length);
     //chunklength = 0;
     printf("This chunk has length %d\n", chunklength);
-    while ( i < 4 ) {
-      printf("%X:",(unsigned char)length[i] );
+    //while ( i < 4 ) {
+      //printf("%X:",(unsigned char)length[i] );
       //printf("%x",tEXt[i-4]);
       //printf("%x",zTXt[i-4]);
       //printf("%x",tIME[i-4]);
-      i++;
-    }
+      //i++;
+    //}
     //if (strcmp(buffer+4, tEXt) == 0) {
     //  printf("We gots a tEXt.");
       /* atoi will take the first four characters and output an integer 
