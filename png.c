@@ -14,24 +14,39 @@ int analyze_chunks(FILE *f) {
      and output data portion (after verifying checksum). Otherwise skip ahead the length of the data 
      + 4 bytes. */
   /* This function only analyzes 8 bytes at a time */
-  char buffer[8];
-  while (fread(buffer, sizeof(char), 8, f) == 1) {
+  char buffer[4];
+  char length[4];
+  while (fread(buffer, 1, 8, f) == 8) {
+    int i = 0;
+    
+    while ( i < 8 ) {
+      printf("%X:",(unsigned char)buffer[i] );
+      //printf("%x",tEXt[i-4]);
+      //printf("%x",zTXt[i-4]);
+      //printf("%x",tIME[i-4]);
+      i++;
+    }
+    printf("\n");
     if (strcmp(buffer+4, tEXt) == 0) {
       printf("We gots a tEXt.");
-      /* atoi will take the first four characters and output an integer */
-      f += (atoi(buffer)+4);
+      /* atoi will take the first four characters and output an integer 
+	 but apparently this doesnt work at all */
+      fseek(f, atoi(buffer), SEEK_CUR);
     }
     else if (strcmp(buffer+4, zTXt) == 0) {
       printf("We gots a zTXt. Decompress that shit.");
-      f += (atoi(buffer)+4);
+      fseek(f, atoi(buffer), SEEK_CUR);
     }
     else if (strcmp(buffer+4, tIME) == 0) {
       printf("What tIME is it? PARTY TIME!");
-      f += (atoi(buffer)+4);
+      fseek(f, atoi(buffer), SEEK_CUR);
     } else {
-      printf("Who cares?");
-      f += (atoi(buffer)+4);
+      int moveahead = 0;
+      //check out sscanf
+      printf("Who cares? Moving ahead %d spaces\n", moveahead);
+      fseek(f, moveahead, SEEK_CUR);
     }
+      
   }
   if (feof(f)) {
     printf("EOF reached.");
@@ -56,13 +71,12 @@ int analyze_png(FILE *f) {
   /* Reads into buffer, each element 1 byte, read 8 bytes, read from input stream f */
   fread(buffer, 1, 8, f);
   //printf("What even is? %s\n", buffer);
-  
   //printf("This number: %ld\n", length);
   /* This snippet could be useful for future reference when trying to examine hex 
   int i = 0;
   while (i < 8 ) {
     printf("%x\n", buffer[i]);
-    printf("%x\n", png_header[i]);
+    printf("%x\n", png_header[i]);df
     i++;
   }
   */
