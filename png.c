@@ -5,6 +5,11 @@
 #include "png.h"
 
 long int chunk_length(char* buffer) {
+  /*HOW IT WORKS: Take our initial buffer, store the values into a new buffer
+  with leading 0s using the command sprintf. Then use strtol to convert
+  our new string "buffer2" into int value using base 16."
+
+
   char *buffer2;
   //int *digits;
   //digits = (int *) malloc(4*sizeof(int));
