@@ -10,15 +10,15 @@ long int chunk_length(char* buffer) {
   our new string "buffer2" into int value using base 16."*/
 
   char *buffer2;
-  printf("Buffer is: %X %X %X %X\n", buffer[0], buffer[1], buffer[2], buffer[3]);
+  //printf("Buffer is: %X %X %X %X\n", buffer[0], buffer[1], buffer[2], buffer[3]);
   buffer2 = (char *) malloc(4*sizeof(char));
   sprintf(buffer2, "%02X%02X%02X%02X",(unsigned char) buffer[0],(unsigned char) buffer[1],(unsigned char) buffer[2],(unsigned char) buffer[3]);
-  printf("Buffer2 is: %s\n", buffer2); 
+  //printf("Buffer2 is: %s\n", buffer2); 
   char *end;
   long int lint0 = strtol(buffer2, &end, 16);  
-  printf("Value is: %ld\n", lint0);
+  //printf("Value is: %ld\n", lint0);
   free(buffer2);
-  getchar();
+  //getchar();
   return lint0;
 }
 
@@ -33,7 +33,8 @@ int analyze_chunks(FILE *f) {
      and output data portion (after verifying checksum). Otherwise skip ahead the length of the data 
      + 4 bytes. */
   /* This function only analyzes 8 bytes at a time */
-  char buffer[8];
+  char *buffer;
+  buffer = malloc(8*sizeof(char));
   //char chunktype[4];
   int chunklength;  
   while(fread(buffer, 1, 8, f) == 8) {
@@ -42,7 +43,7 @@ int analyze_chunks(FILE *f) {
     //chunklength = 0;
     printf("This chunk has length %d\n", chunklength);
     int i = 0;
-    while ( i < 8 ) {
+    while ( i < 8) {
       printf("%X:",(unsigned char) buffer[i] );
       //printf("%x",tEXt[i-4]);
       //printf("%x",zTXt[i-4]);
@@ -50,6 +51,8 @@ int analyze_chunks(FILE *f) {
       i++;
     }
     printf("\n");
+    //printf("buffer: %s matching_string: %s", buffer+4, tIME);
+    
     if (strcmp(buffer+4, tEXt) == 0) {
       printf("We gots a tEXt.\n");
       /* atoi will take the first four characters and output an integer 
@@ -72,10 +75,12 @@ int analyze_chunks(FILE *f) {
   }
   if (feof(f)) {
     printf("EOF reached.");
+    free(buffer);
     return 0;
   }
   else {
     printf("error");
+    free(buffer);
     return -1;
   }
 }
