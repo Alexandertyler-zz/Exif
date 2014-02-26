@@ -14,9 +14,10 @@ int analyze_chunks(FILE *f) {
      and output data portion (after verifying checksum). Otherwise skip ahead the length of the data 
      + 4 bytes. */
   /* This function only analyzes 8 bytes at a time */
-  char buffer[4];
-  char length[4];
-  while (fread(buffer, 1, 8, f) == 8) {
+  char buffer[8];
+  //char length[4];
+    
+  while(fread(buffer, 1, 8, f) == 8) {
     int i = 0;
     
     while ( i < 8 ) {
@@ -41,12 +42,22 @@ int analyze_chunks(FILE *f) {
       printf("What tIME is it? PARTY TIME!");
       fseek(f, atoi(buffer), SEEK_CUR);
     } else {
-      int moveahead = 0;
+      char bytes[4];
+      memcpy(bytes, buffer, 4);
+      string str(bytes);
+      printf("String, %s\n", string);
+      
+      int moveahead = 4;
+      long int li1;
+      char * pEnd;
+      li1 = strtol (string, &pEnd, 0);
+      printf("The li1, %ld\n", li1);
+      getchar();
       //check out sscanf
       printf("Who cares? Moving ahead %d spaces\n", moveahead);
       fseek(f, moveahead, SEEK_CUR);
     }
-      
+    getchar();
   }
   if (feof(f)) {
     printf("EOF reached.");
@@ -70,16 +81,17 @@ int analyze_png(FILE *f) {
   char buffer[8];
   /* Reads into buffer, each element 1 byte, read 8 bytes, read from input stream f */
   fread(buffer, 1, 8, f);
-  //printf("What even is? %s\n", buffer);
+  //printf("%s", png_header);
+  //getchar();
   //printf("This number: %ld\n", length);
-  /* This snippet could be useful for future reference when trying to examine hex 
-  int i = 0;
+  //This snippet could be useful for future reference when trying to examine hex 
+  /*int i = 0;
   while (i < 8 ) {
     printf("%x\n", buffer[i]);
-    printf("%x\n", png_header[i]);df
+    printf("%x\n", png_header[i]);
     i++;
   }
-  */
+  getchar();*/
   if (strcmp(buffer,png_header) == 0) {
     analyze_chunks(f);
     printf("THIS SHITS A PNG!\n");
