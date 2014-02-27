@@ -19,9 +19,9 @@ void analyze_chunks(FILE *f) {
   char APP1[1] = {0xe1};
 
   char *buffer;
-  buffer = malloc(2*sizeof(char));
-  while(fread(buffer, 1, 2, f) == 2) {
-    if (strcmp(buffer[0], chunk_front) == 0) {
+  buffer = malloc(1*sizeof(char));
+  while(fread(buffer, 1, 1, f) == 1) {
+    if (strcmp(buffer, chunk_front) == 0) {
       printf("Matched front of chunk\n");
       if (strcmp(buffer[1], APP1) == 0) {
         analyze_tiff(f);
@@ -39,8 +39,8 @@ void analyze_chunks(FILE *f) {
 
 int analyze_jpg(FILE *f) {
   /* YOU WRITE THIS PART */
-  char jpg_SOI[1] = {0xffd8};
-  char jpg_EOI[1] = {0xffd9};
+  char jpg_SOI[2] = {0xff, 0xd8};
+  //char jpg_EOI[2] = {0xff, 0xd9};
   char buffer[8];
   fread(buffer, 1, 2, f);
 
