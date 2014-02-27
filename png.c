@@ -47,9 +47,12 @@ int printzTXt(FILE *f, char *chunktype, int chunklength) {
       tracker++;
       //value_segment++;
     }
-    //printf("tracker: %lu\n chunklength: %d\n counter: %d\n", tracker, chunklength, counter);
-    uncompress((unsigned char*) uncompressed_key, &keylen, (unsigned char*) value_segment, tracker);
-    //uncompressed_key[tracker] = '\0';
+
+    while(uncompress((unsigned char*) uncompressed_key, &keylen, (unsigned char*) value_segment, tracker) == -5) {
+      free(uncompressed_key);
+      keylen = keylen * 2;
+      uncompressed_key = calloc(keylen,sizeof(unsigned char));
+    }
     printf("%s\n",uncompressed_key);
 
     //Check checksum
