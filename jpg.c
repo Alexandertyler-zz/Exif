@@ -20,18 +20,38 @@ void analyze_tiff(FILE *f) {
 
 }
 
+long int standardLength(unsigned char* buffer) {
+  unsigned char* buffer2;
+  buffer2 = (char*) malloc(2*sizeof(unsigned char));
+  sprintf(buffer2, "%02x%02X", buffer[0], buffer[1]);
+  unsigned char *end;
+  long int lint0 = strtol(buffer2, &end, 16);
+  free(buffer2);
+  return lint0;
+} 
+
 void analyze_jpgchunks(FILE *f) {
   //Marker is 2 bytes
   //length is 2 bytes
   //data is (length-2) bytes
-  char chunk_front[2] = {0xff};
-  //char super_chunk[10] = {0xd0, 0xd1, 0xd2, 0xd3, 0xd4, 0xd5,
-  //                          0xd6, 0xd7, 0xd8};
-  char super_chunk_end[2] = {0xd9};
-  char APP1[2] = {0xe1};
+  unsigned char chunk_front[2] = {0xff};
+  
+  unsigned char superCd0[2] = {0xd0};
+  unsigned char superCd1[2] = {0xd1};
+  unsigned char superCd2[2] = {0xd2};
+  unsigned char superCd3[2] = {0xd3};
+  unsigned char superCd4[2] = {0xd4};
+  unsigned char superCd5[2] = {0xd5};
+  unsigned char superCd6[2] = {0xd6};
+  unsigned char superCd7[2] = {0xd7};
+  unsigned char superCd8[2] = {0xd8};
+  unsigned char superCda[2] = {0xda};
 
-  char *buffer;
-  buffer = malloc(1*sizeof(char));
+  unsigned char super_chunk_end[2] = {0xd9};
+  unsigned char APP1[2] = {0xe1};
+
+  unsigned char *buffer;
+  buffer = malloc(1*sizeof(unsigned char));
   while(fread(buffer, 1, 1, f) == 1) {
     if (strcmp(buffer, chunk_front) == 0) {
       printf("Matched front of chunk\n");
@@ -39,11 +59,24 @@ void analyze_jpgchunks(FILE *f) {
       if (strcmp(buffer, APP1) == 0) {
         printf("APP1 found\n");
         analyze_tiff(f);
+      } else if (!strcmp(buffer,superCd0) || !strcmp(buffer,superCd1) || !strcmp(buffer,superCd2)
+                  || !strcmp(buffer,superCd3) || !strcmp(buffer,superCd4) || !strcmp(buffer,superCd5)
+                  || !strcmp(buffer,superCd6) || !strcmp(buffer,superCd7) || !strcmp(buffer,superCd8)
+                  || !strcmp(buffer,superCda)) {
+        printf("Superchunk engaged.\n");
+
       } else if (strcmp(buffer, super_chunk_end) == 0) {
         printf("End of file\n");
         return;
       } else {
-        printf("No chunks yet.\n");
+        printf("Standard chunk. Finding length.\n");
+        unsigned char *lengthBuffer;
+        lengthBuffer = malloc(2*sizeof(unsigned char));
+        fread(buffer, 1, 2, f);
+        int chunkLength;
+        chunkLength = standardLength(lengthBuffer);
+        fseek(f, chunkLength-2, SEEK_CUR);
+        free(lengthBuffer);
       }
       getchar();
     } else {
@@ -55,10 +88,10 @@ void analyze_jpgchunks(FILE *f) {
 
 int analyze_jpg(FILE *f) {
   // YOU WRITE THIS PART 
-  char jpg_SOI[3] = {0xff, 0xd8};
+  unsigned char jpg_SOI[3] = {0xff, 0xd8};
   //char jpg_EOI[2] = {0xff, 0xd9};
-  char *buffer;
-  buffer = malloc(2*sizeof(char));
+  unsigned char *buffer;
+  buffer = malloc(2*sizeof(unsigned char));
   fread(buffer, 1, 2, f);
   int i = 0;
   while (i < 2) {
