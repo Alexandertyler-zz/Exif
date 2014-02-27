@@ -8,6 +8,7 @@
  * If it is a JPG file, print out all relevant metadata and return 0.
  * If it isn't a JPG file, return -1 and print nothing.
  */
+/*
 void analyze_tiff(FILE *f) {
   printf("Inside analyze_tiff");
   char *buffer;
@@ -52,9 +53,10 @@ void analyze_jpgchunks(FILE *f) {
   }
   free(buffer);
 }
-
+*/
 int analyze_jpg(FILE *f) {
   // YOU WRITE THIS PART 
+  /*
   char jpg_SOI[3] = {0xff, 0xd8};
   //char jpg_EOI[2] = {0xff, 0xd9};
   char *buffer;
@@ -74,6 +76,7 @@ int analyze_jpg(FILE *f) {
   } else {
     printf("We've lost contact with the jpg sir.\n");
     free(buffer);
+  */
     return -1;
-  } 
+ 
 }
