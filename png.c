@@ -4,6 +4,42 @@
 #include <zlib.h>
 #include "png.h"
 
+int printtIMEstamp(FILE *f, char *chunktype, int chunklength) {
+  char *buffer;
+  char *year_array;
+  char *check_sum;
+  int year;
+  int retval; 
+  year_array = malloc(2*sizeof(char));
+  buffer = malloc(7*sizeof(char));
+  check_sum = malloc(4*sizeof(char));
+  if (fread(buffer,1,11,f) == 11) { 
+    retval = 1;
+    // Formatting
+    sprintf(year_array,"%02X%02X", (unsigned char) buffer[0], (unsigned char) buffer[1]);
+    year = (int) strtol(year_array, NULL, 16);
+    printf("Timestamp: %d/%d/%d %d:%d:%d\n", buffer[2], buffer[3], year, buffer[4], buffer[5], buffer[6]);
+    // Check checksum  
+    sprintf(check_sum,"%02X%02X%02X%02X", (unsigned char) buffer[7], (unsigned char) buffer[8], (unsigned char) buffer[9], (unsigned char) buffer[10]);
+    int checksum = (int) strtol(check_sum, NULL, 16);
+    unsigned int calculated_checksum = crc32(0, Z_NULL, 0);
+    calculated_checksum = crc32(calculated_checksum, (unsigned char*) chunktype, 4);
+    calculated_checksum = crc32(calculated_checksum, (unsigned char*) buffer, chunklength);
+    if (calculated_checksum != checksum) {
+      printf("Error, incorrect checksum.");
+      retval = -1;
+    }
+  }
+  else {
+    printf("Error, incorrectly formatted tIME chunk");
+    retval = -1;
+  }
+  free(buffer);
+  free(year_array);
+  free(check_sum);
+  return retval;
+}
+
 long int chunk_length(char* buffer) {
   /*HOW IT WORKS: Take our initial buffer, store the values into a new buffer
   with leading 0s using the command sprintf. Then use strtol to convert
@@ -41,44 +77,37 @@ int analyze_chunks(FILE *f) {
     //int i = 0;
     chunklength = chunk_length(buffer);
     //chunklength = 0;
-    printf("This chunk has length %d\n", chunklength);
-    int i = 0;
-    while ( i < 8) {
-      printf("%X:",(unsigned char) buffer[i] );
+    
+    //int i = 0;
+    /*while ( i < 8) {
+      //printf("%X:",(unsigned char) buffer[i] );
       //printf("%x",tEXt[i-4]);
       //printf("%x",zTXt[i-4]);
       //printf("%x",tIME[i-4]);
       i++;
-    }
-    printf("\n");
-    //printf("buffer: %s matching_string: %s", buffer+4, tIME);
-    
+      }   */
     if (strcmp(buffer+4, tEXt) == 0) {
       printf("We gots a tEXt.\n");
-      /* atoi will take the first four characters and output an integer 
-	 but apparently this doesnt work at all */
-    //  fseek(f, chunklength, SEEK_CUR);
+      fseek(f, chunklength, SEEK_CUR);
     }
     else if (strcmp(buffer+4, zTXt) == 0) {
       printf("We gots a zTXt. Decompress that shit.\n");
-    //  fseek(f, chunklength, SEEK_CUR);
+      fseek(f, chunklength, SEEK_CUR);
     }
     else if (strcmp(buffer+4, tIME) == 0) {
-      printf("What tIME is it? PARTY TIME!\n");
-    //  fseek(f, chunklength, SEEK_CUR);
+      printtIMEstamp(f, tIME, chunklength);
     } else {   
-      //getchar();      
-      printf("Who cares?\n");
+      fseek(f,chunklength+4, SEEK_CUR);
     }
-    fseek(f,chunklength+4, SEEK_CUR);
     //getchar();
   }
   if (feof(f)) {
-    printf("EOF reached.");
+    //We've hit the end of the file.
     free(buffer);
     return 0;
   }
   else {
+    //Something bad happened
     printf("error");
     free(buffer);
     return -1;
@@ -110,7 +139,7 @@ int analyze_png(FILE *f) {
   getchar();*/
   if (strcmp(buffer,png_header) == 0) {
     analyze_chunks(f);
-    printf("THIS SHITS A PNG!\n");
+    //printf("THIS SHITS A PNG!\n");
     return 1;
   } else {
     printf("Not even a little bit of a PNG.\n");
