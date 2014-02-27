@@ -8,6 +8,7 @@
  * If it is a JPG file, print out all relevant metadata and return 0.
  * If it isn't a JPG file, return -1 and print nothing.
  */
+
 void analyze_tiff(FILE *f) {
   printf("Inside analyze_tiff");
   char *buffer;
@@ -108,5 +109,5 @@ int analyze_jpg(FILE *f) {
     printf("We've lost contact with the jpg sir.\n");
     free(buffer);
     return -1;
-  } 
+ 
 }
