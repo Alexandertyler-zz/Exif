@@ -8,6 +8,8 @@
  * If it is a JPG file, print out all relevant metadata and return 0.
  * If it isn't a JPG file, return -1 and print nothing.
  */
+
+/*
 void analyze_chunks(FILE *f) {
   //Marker is 2 bytes
   //length is 2 bytes
@@ -36,9 +38,9 @@ void analyze_chunks(FILE *f) {
     }
   }
 }
-
+*/
 int analyze_jpg(FILE *f) {
-  /* YOU WRITE THIS PART */
+  /* YOU WRITE THIS PART 
   char jpg_SOI[2] = {0xff, 0xd8};
   //char jpg_EOI[2] = {0xff, 0xd9};
   char buffer[8];
@@ -51,5 +53,6 @@ int analyze_jpg(FILE *f) {
   } else {
     printf("We've lost contact with the jpg sir.\n");
     return -1;
-  }
+    } */
+  return -1;
 }

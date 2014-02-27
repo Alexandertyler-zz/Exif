@@ -4,6 +4,54 @@
 #include <zlib.h>
 #include "png.h"
 
+int printtEXt(FILE *f, char *chunktype, int chunklength) {
+  int retval;
+  char *buffer;
+  buffer = malloc((chunklength+4)*sizeof(char));
+  char *check_sum;
+  check_sum = malloc(4*sizeof(char));
+  char *value_segment;
+  char *key_segment;
+  key_segment = malloc(chunklength*sizeof(char));
+    if (fread(buffer,1,chunklength+4,f) == (chunklength+4)) {
+    retval = 1;
+    int counter = 0;
+    while (buffer[counter] != '\0' && counter < chunklength) {
+      sprintf(key_segment+counter, "%c", (unsigned char) buffer[counter]);
+      counter++;
+    }
+    counter++;
+    sprintf(key_segment+counter, "%c", (unsigned char) buffer[counter]);
+    printf("%s: ", key_segment);
+    if (counter == chunklength) {
+      printf("Error, improperly formatted text chunk");
+      retval = -1;
+    }
+    value_segment = malloc((chunklength-counter)*sizeof(char));
+    int tracker = 0;
+    while (counter < chunklength) {
+      sprintf(value_segment+tracker, "%c", (unsigned char) buffer[counter]);
+      counter++;
+      tracker++;
+    }
+    printf("%s\n",value_segment);
+    sprintf(check_sum,"%02X%02X%02X%02X", (unsigned char) buffer[chunklength], (unsigned char) buffer[chunklength+1], (unsigned char) buffer[chunklength+2], (unsigned char) buffer[chunklength+3]);
+    int checksum = (int) strtol(check_sum, NULL, 16);
+    unsigned int calculated_checksum = crc32(0, Z_NULL, 0);
+    calculated_checksum = crc32(calculated_checksum, (unsigned char*) chunktype, 4);
+    calculated_checksum = crc32(calculated_checksum, (unsigned char*) buffer, chunklength);
+    if (calculated_checksum != checksum) {
+      printf("Error, incorrect checksum.");
+      retval = -1;
+    }
+  }
+  else {
+    printf("Error, reached EOF in text chunk.");
+    retval = -1;
+  }  
+return retval;
+}
+    
 int printtIMEstamp(FILE *f, char *chunktype, int chunklength) {
   char *buffer;
   char *year_array;
@@ -11,7 +59,7 @@ int printtIMEstamp(FILE *f, char *chunktype, int chunklength) {
   int year;
   int retval; 
   year_array = malloc(2*sizeof(char));
-  buffer = malloc(7*sizeof(char));
+  buffer = malloc(11*sizeof(char));
   check_sum = malloc(4*sizeof(char));
   if (fread(buffer,1,11,f) == 11) { 
     retval = 1;
@@ -63,6 +111,7 @@ int analyze_chunks(FILE *f) {
   char tEXt[4] = {0x74, 0x45, 0x58, 0x74};
   char zTXt[4] = {0x7a, 0x54, 0x58, 0x74};
   char tIME[4] = {0x74, 0x49, 0x4d, 0x45};
+  int retval; 
   /* Idea for proceeding: we need to go through chunks of code. Chunks take the form:
      length of data portion of chunk (4 bytes) chunktype (4bytes) data (variable bytes) checksum (4 bytes) 
      So process first 8 bytes of next chunk. If the last 4 bytes match chunktypes above, then process
@@ -77,25 +126,27 @@ int analyze_chunks(FILE *f) {
     //int i = 0;
     chunklength = chunk_length(buffer);
     //chunklength = 0;
-    
-    //int i = 0;
-    /*while ( i < 8) {
-      //printf("%X:",(unsigned char) buffer[i] );
+    /*
+    int i = 4;
+    while ( i < 8) {
+      printf("%X:",(unsigned char) buffer[i] );
       //printf("%x",tEXt[i-4]);
       //printf("%x",zTXt[i-4]);
       //printf("%x",tIME[i-4]);
       i++;
-      }   */
-    if (strcmp(buffer+4, tEXt) == 0) {
-      printf("We gots a tEXt.\n");
-      fseek(f, chunklength, SEEK_CUR);
+    } 
+    */
+   
+    if (strncmp(buffer+4, tEXt,4) == 0) {
+      //printf("ITS A TEXT!");
+      retval = printtEXt(f, buffer+4, chunklength);
     }
-    else if (strcmp(buffer+4, zTXt) == 0) {
+    else if (strncmp(buffer+4, zTXt,4) == 0) {
       printf("We gots a zTXt. Decompress that shit.\n");
       fseek(f, chunklength, SEEK_CUR);
     }
-    else if (strcmp(buffer+4, tIME) == 0) {
-      printtIMEstamp(f, tIME, chunklength);
+    else if (strncmp(buffer+4, tIME,4) == 0) {
+      retval = printtIMEstamp(f, buffer+4, chunklength);
     } else {   
       fseek(f,chunklength+4, SEEK_CUR);
     }
@@ -104,7 +155,7 @@ int analyze_chunks(FILE *f) {
   if (feof(f)) {
     //We've hit the end of the file.
     free(buffer);
-    return 0;
+    return retval;
   }
   else {
     //Something bad happened
