@@ -9,6 +9,13 @@
  * If it isn't a JPG file, return -1 and print nothing.
  */
 void analyze_tiff(FILE *f) {
+  printf("Inside analyze_tiff");
+  char *buffer;
+  buffer = malloc(2*sizeof(char));
+  //this is endianness, 2 bytes
+  fread(buffer, 1, 2, f);
+  
+  free(buffer)
   return;
 
 }
@@ -43,6 +50,7 @@ void analyze_jpgchunks(FILE *f) {
       printf("No chunk front match.\n");
     }
   }
+  free(buffer);
 }
 
 int analyze_jpg(FILE *f) {
@@ -61,9 +69,11 @@ int analyze_jpg(FILE *f) {
   if (!strcmp(buffer,jpg_SOI)) {
     analyze_jpgchunks(f);
     printf("JPG Confirmed.\n");
+    free(buffer);
     return 1;
   } else {
     printf("We've lost contact with the jpg sir.\n");
+    free(buffer);
     return -1;
   } 
 }
