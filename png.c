@@ -3,6 +3,79 @@
 #include <stdlib.h>
 #include <zlib.h>
 #include "png.h"
+int printzTXt(FILE *f, char *chunktype, int chunklength) {
+  //Declarations
+  int retval;
+  char *buffer;
+  buffer = malloc((chunklength+4)*sizeof(char));
+  char *check_sum;
+  check_sum = malloc(4*sizeof(char));
+  unsigned char *value_segment;
+  unsigned char *key_segment;
+  unsigned char *uncompressed_key;
+  uLongf keylen = 1000;
+  uncompressed_key = (unsigned char *) malloc(keylen*sizeof(unsigned char));
+  value_segment = (unsigned char *) malloc(chunklength*sizeof(unsigned char));
+  //Not sure how large to make this section so can't be greater than chunklength
+  key_segment = malloc(chunklength*sizeof(char));
+  if (fread(buffer,1,chunklength+4,f) == (chunklength+4)) {
+    retval = 1;
+    int counter = 0;
+    //Process buffer and look for null
+    while (buffer[counter] != '\0' && counter < chunklength) {
+      sprintf(key_segment+counter, "%c", (unsigned char) buffer[counter]);
+      counter++;
+    }
+    //Copy over null
+    sprintf(key_segment+counter, "%c", (unsigned char) buffer[counter]);
+    //Increment past null
+    counter++;
+    counter++;
+    printf("%s: ", key_segment);
+    //Make sure that there was actually a null character
+    if (counter == chunklength) {
+      printf("Error, improperly formatted text chunk");
+      retval = -1;
+    }
+    //Initialize val segment
+    
+    uLongf tracker = 0;
+    
+    while (counter < chunklength) {
+      sprintf(value_segment+tracker, "%c", (unsigned char) buffer[counter]);
+      counter++;
+      tracker++;
+    }
+
+    uncompress((unsigned char*) uncompressed_key, &keylen, (unsigned char*) value_segment, tracker);
+    printf("%s\n",uncompressed_key);
+
+    //Check checksum
+    sprintf(check_sum,"%02X%02X%02X%02X", (unsigned char) buffer[chunklength], (unsigned char) buffer[chunklength+1], (unsigned char) buffer[chunklength+2], (unsigned char) buffer[chunklength+3]);
+    int checksum = (int) strtol(check_sum, NULL, 16);
+    unsigned int calculated_checksum = crc32(0, Z_NULL, 0);
+    calculated_checksum = crc32(calculated_checksum, (unsigned char*) chunktype, 4);
+    calculated_checksum = crc32(calculated_checksum, (unsigned char*) buffer, chunklength);
+    if (calculated_checksum != checksum) {
+      printf("Error, incorrect checksum.");
+      retval = -1;
+    }
+  }
+  //Couldnt read length of chunks
+  else {
+    printf("Error, reached EOF in text chunk.");
+    retval = -1;
+  }  
+  // make sure these are all created outside 
+  free(uncompressed_key);
+  free(value_segment);
+  free(key_segment);
+  free(buffer);
+  free(check_sum);
+  return retval;
+}
+  
+
 
 int printtEXt(FILE *f, char *chunktype, int chunklength) {
   //Declarations
@@ -59,7 +132,11 @@ int printtEXt(FILE *f, char *chunktype, int chunklength) {
     printf("Error, reached EOF in text chunk.");
     retval = -1;
   }  
-return retval;
+  free(value_segment);
+  free(key_segment);
+  free(buffer);
+  free(check_sum);
+  return retval;
 }
     
 int printtIMEstamp(FILE *f, char *chunktype, int chunklength) {
@@ -132,7 +209,7 @@ int analyze_chunks(FILE *f) {
   buffer = malloc(8*sizeof(char));
   //char chunktype[4];
   int chunklength;  
-  while(fread(buffer, 1, 8, f) == 8) {
+  while(fread(buffer, 1, 8, f) == 8 && retval != -1) {
     //int i = 0;
     chunklength = chunk_length(buffer);
     //chunklength = 0;
@@ -152,8 +229,8 @@ int analyze_chunks(FILE *f) {
       retval = printtEXt(f, buffer+4, chunklength);
     }
     else if (strncmp(buffer+4, zTXt,4) == 0) {
-      printf("We gots a zTXt. Decompress that shit.\n");
-      fseek(f, chunklength, SEEK_CUR);
+      //printf("We gots a zTXt. Decompress that shit.\n");
+      retval = printzTXt(f, buffer+4, chunklength);
     }
     else if (strncmp(buffer+4, tIME,4) == 0) {
       retval = printtIMEstamp(f, buffer+4, chunklength);
