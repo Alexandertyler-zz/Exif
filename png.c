@@ -10,12 +10,14 @@ int printzTXt(FILE *f, char *chunktype, int chunklength) {
   buffer = malloc((chunklength+4)*sizeof(char));
   char *check_sum;
   check_sum = malloc(4*sizeof(char));
-  unsigned char *value_segment;
+  char *value_segment;
   unsigned char *key_segment;
-  unsigned char *uncompressed_key;
-  uLongf keylen = 1000;
-  uncompressed_key = (unsigned char *) malloc(keylen*sizeof(unsigned char));
-  value_segment = (unsigned char *) malloc(chunklength*sizeof(unsigned char));
+  char *uncompressed_key;
+  uLongf keylen;
+  //keylen = malloc(sizeof(uLongf));
+  keylen = 1000;
+  uncompressed_key = calloc(keylen, sizeof(unsigned char));
+  value_segment = malloc(chunklength*sizeof(char));
   //Not sure how large to make this section so can't be greater than chunklength
   key_segment = malloc(chunklength*sizeof(char));
   if (fread(buffer,1,chunklength+4,f) == (chunklength+4)) {
@@ -23,12 +25,12 @@ int printzTXt(FILE *f, char *chunktype, int chunklength) {
     int counter = 0;
     //Process buffer and look for null
     while (buffer[counter] != '\0' && counter < chunklength) {
-      sprintf(key_segment+counter, "%c", (unsigned char) buffer[counter]);
+      sprintf((char *) key_segment+counter, "%c", (unsigned char) buffer[counter]);
       counter++;
     }
     //Copy over null
-    sprintf(key_segment+counter, "%c", (unsigned char) buffer[counter]);
-    //Increment past null
+    sprintf((char *) key_segment+counter, "%c", (unsigned char) buffer[counter]);
+    //Increment past null and compression type
     counter++;
     counter++;
     printf("%s: ", key_segment);
@@ -38,16 +40,16 @@ int printzTXt(FILE *f, char *chunktype, int chunklength) {
       retval = -1;
     }
     //Initialize val segment
-    
     uLongf tracker = 0;
-    
     while (counter < chunklength) {
-      sprintf(value_segment+tracker, "%c", (unsigned char) buffer[counter]);
+      sprintf(value_segment+tracker, "%c", buffer[counter]);
       counter++;
       tracker++;
+      //value_segment++;
     }
-
+    //printf("tracker: %lu\n chunklength: %d\n counter: %d\n", tracker, chunklength, counter);
     uncompress((unsigned char*) uncompressed_key, &keylen, (unsigned char*) value_segment, tracker);
+    //uncompressed_key[tracker] = '\0';
     printf("%s\n",uncompressed_key);
 
     //Check checksum
