@@ -16,17 +16,17 @@ void analyze_tiff(FILE *f) {
   //this is endianness, 2 bytes
   fread(buffer, 1, 2, f);
   
-  free(buffer)
+  free(buffer);
   return;
 
 }
 
 long int standardLength(unsigned char* buffer) {
   unsigned char* buffer2;
-  buffer2 = (char*) malloc(2*sizeof(unsigned char));
-  sprintf(buffer2, "%02x%02X", buffer[0], buffer[1]);
-  unsigned char *end;
-  long int lint0 = strtol(buffer2, &end, 16);
+  buffer2 = malloc(2*sizeof(unsigned char));
+  sprintf((char *) buffer2, "%02x%02X", buffer[0], buffer[1]);
+  char *end;
+  long int lint0 = strtol((char *) buffer2, &end, 16);
   free(buffer2);
   return lint0;
 } 
@@ -35,38 +35,38 @@ void analyze_jpgchunks(FILE *f) {
   //Marker is 2 bytes
   //length is 2 bytes
   //data is (length-2) bytes
-  unsigned char chunk_front[2] = {0xff};
+  char chunk_front[2] = {0xff};
   
-  unsigned char superCd0[2] = {0xd0};
-  unsigned char superCd1[2] = {0xd1};
-  unsigned char superCd2[2] = {0xd2};
-  unsigned char superCd3[2] = {0xd3};
-  unsigned char superCd4[2] = {0xd4};
-  unsigned char superCd5[2] = {0xd5};
-  unsigned char superCd6[2] = {0xd6};
-  unsigned char superCd7[2] = {0xd7};
-  unsigned char superCd8[2] = {0xd8};
-  unsigned char superCda[2] = {0xda};
+  char superCd0[2] = {0xd0};
+  char superCd1[2] = {0xd1};
+  char superCd2[2] = {0xd2};
+  char superCd3[2] = {0xd3};
+  char superCd4[2] = {0xd4};
+  char superCd5[2] = {0xd5};
+  char superCd6[2] = {0xd6};
+  char superCd7[2] = {0xd7};
+  char superCd8[2] = {0xd8};
+  char superCda[2] = {0xda};
 
-  unsigned char super_chunk_end[2] = {0xd9};
-  unsigned char APP1[2] = {0xe1};
+  char super_chunk_end[2] = {0xd9};
+  char APP1[2] = {0xe1};
 
   unsigned char *buffer;
   buffer = malloc(1*sizeof(unsigned char));
   while(fread(buffer, 1, 1, f) == 1) {
-    if (strcmp(buffer, chunk_front) == 0) {
+    if (strcmp((char *)buffer, chunk_front) == 0) {
       printf("Matched front of chunk\n");
       fread(buffer, 1, 1, f);
-      if (strcmp(buffer, APP1) == 0) {
+      if (strcmp((char *)buffer, APP1) == 0) {
         printf("APP1 found\n");
         analyze_tiff(f);
-      } else if (!strcmp(buffer,superCd0) || !strcmp(buffer,superCd1) || !strcmp(buffer,superCd2)
-                  || !strcmp(buffer,superCd3) || !strcmp(buffer,superCd4) || !strcmp(buffer,superCd5)
-                  || !strcmp(buffer,superCd6) || !strcmp(buffer,superCd7) || !strcmp(buffer,superCd8)
-                  || !strcmp(buffer,superCda)) {
+      } else if (!strcmp((char *)buffer,superCd0) || !strcmp((char *)buffer,superCd1) || !strcmp((char *)buffer,superCd2)
+                  || !strcmp((char *)buffer,superCd3) || !strcmp((char *)buffer,superCd4) || !strcmp((char *)buffer,superCd5)
+                  || !strcmp((char *)buffer,superCd6) || !strcmp((char *)buffer,superCd7) || !strcmp((char *)buffer,superCd8)
+                  || !strcmp((char *)buffer,superCda)) {
         printf("Superchunk engaged.\n");
 
-      } else if (strcmp(buffer, super_chunk_end) == 0) {
+      } else if (strcmp((char *)buffer, super_chunk_end) == 0) {
         printf("End of file\n");
         return;
       } else {
@@ -100,7 +100,7 @@ int analyze_jpg(FILE *f) {
     printf("jpg_SOI is: %x\n", jpg_SOI[i]);
     i++;
   }
-  if (!strcmp(buffer,jpg_SOI)) {
+  if (!strcmp((char *)buffer,(char *)jpg_SOI)) {
     analyze_jpgchunks(f);
     printf("JPG Confirmed.\n");
     free(buffer);
@@ -109,5 +109,5 @@ int analyze_jpg(FILE *f) {
     printf("We've lost contact with the jpg sir.\n");
     free(buffer);
     return -1;
- 
+  }
 }
