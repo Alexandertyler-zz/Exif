@@ -24,10 +24,12 @@ void analyze_tiff(FILE *f) {
 long int standardLength(unsigned char* buffer) {
   unsigned char* buffer2;
   buffer2 = malloc(2*sizeof(unsigned char));
+  printf("Buffer2 is: %02X%02X\n", buffer[0], buffer[1]);
   sprintf((char *) buffer2, "%02x%02X", buffer[0], buffer[1]);
   char *end;
   long int lint0 = strtol((char *) buffer2, &end, 16);
   free(buffer2);
+  printf("Length is: %li\n", lint0);
   return lint0;
 } 
 
@@ -71,9 +73,11 @@ void analyze_jpgchunks(FILE *f) {
         return;
       } else {
         printf("Standard chunk. Finding length.\n");
+        printf("Buffer contents: %02X\n", buffer[0]);
         unsigned char *lengthBuffer;
         lengthBuffer = malloc(2*sizeof(unsigned char));
         fread(buffer, 1, 2, f);
+        printf("New lengthbuffer contents: %02X%02X\n", lengthBuffer[0], lengthBuffer[1]);
         int chunkLength;
         chunkLength = standardLength(lengthBuffer);
         fseek(f, chunkLength-2, SEEK_CUR);
