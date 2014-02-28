@@ -10,7 +10,7 @@
  */
 
 void analyze_tiff(FILE *f) {
-  printf("Inside analyze_tiff");
+  printf("Inside analyze_tiff\n");
   char *buffer;
   buffer = malloc(2*sizeof(char));
   //this is endianness, 2 bytes
@@ -19,6 +19,25 @@ void analyze_tiff(FILE *f) {
   free(buffer);
   return;
 
+}
+
+void superChunk_walk(FILE *f) {
+  char chunk_front[2] = {0xff};
+  char empty_chunk[2] = {0x00};
+  unsigned char* parser;
+  parser = calloc(1, sizeof(unsigned char));
+  while(fread(parser, 1, 1, f)) {
+    if (!strcmp((char *)parser,chunk_front)) {      
+      printf("Chunk front in super chunk: %02X\n", parser[0]);
+      fread(parser, 1, 1, f);
+      if (strcmp((char *)parser,empty_chunk)) {
+        printf("Not an empty chunk: %02X\n", parser[0]);
+        fseek(f, (-2), SEEK_CUR);
+        free(parser);
+        return; 
+      }
+    }
+  } 
 }
 
 long int standardLength(unsigned char* buffer) {
@@ -67,7 +86,7 @@ void analyze_jpgchunks(FILE *f) {
                   || !strcmp((char *)buffer,superCd6) || !strcmp((char *)buffer,superCd7) || !strcmp((char *)buffer,superCd8)
                   || !strcmp((char *)buffer,superCda)) {
         printf("Superchunk engaged.\n");
-
+        superChunk_walk(f);
       } else if (strcmp((char *)buffer, super_chunk_end) == 0) {
         printf("End of file\n");
         return;
@@ -76,7 +95,7 @@ void analyze_jpgchunks(FILE *f) {
         printf("Buffer contents: %02X\n", buffer[0]);
         unsigned char *lengthBuffer;
         lengthBuffer = malloc(2*sizeof(unsigned char));
-        fread(buffer, 1, 2, f);
+        fread(lengthBuffer, 1, 2, f);
         printf("New lengthbuffer contents: %02X%02X\n", lengthBuffer[0], lengthBuffer[1]);
         int chunkLength;
         chunkLength = standardLength(lengthBuffer);
@@ -105,6 +124,7 @@ int analyze_jpg(FILE *f) {
     i++;
   }
   if (!strcmp((char *)buffer,(char *)jpg_SOI)) {
+    fseek(f, -2, SEEK_CUR);
     analyze_jpgchunks(f);
     printf("JPG Confirmed.\n");
     free(buffer);
