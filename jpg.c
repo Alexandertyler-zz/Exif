@@ -11,12 +11,38 @@
 
 void analyze_tiff(FILE *f) {
   printf("Inside analyze_tiff\n");
-  char *buffer;
-  buffer = malloc(2*sizeof(char));
-  //this is endianness, 2 bytes
-  fread(buffer, 1, 2, f);
+  char bigEndian[3] = {0x4d, 0x4d};
+  char lilEndian[3] = {0x49, 0x49};
+  char magicString[3] = {0x2a, 0x00};
   
-  free(buffer);
+
+  unsigned char* tiffbuff;
+  tiffbuff = calloc(2, sizeof(unsigned char));
+  //this is endianness, 2 bytes
+  fread(tiffbuff, 1, 2, f);
+  printf("Tiffbuff contents: %02X%02X\n", tiffbuff[0], tiffbuff[1]);
+  if (!strcmp((char *)tiffbuff,lilEndian)) {
+    printf("Little endian. All is well.\n");
+  } else if (!strcmp((char *)tiffbuff,bigEndian)) {
+    printf("Big endian. This is an error.\n");
+  }
+  fread(tiffbuff, 1, 2, f);
+  printf("Tiffbuff contents: %02X%02X\n", tiffbuff[0], tiffbuff[1]);
+  if (!strcmp((char *)tiffbuff,magicString)) {
+    printf("Magic string matches.\n");
+  } else {
+    printf("Magical error on magical string.\n");
+  }
+  tiffbuff = calloc(4, sizeof(unsigned char));
+  fread(tiffbuff, 1, 4, f);
+  
+
+
+
+
+
+
+  free(tiffbuff);
   return;
 
 }
@@ -80,6 +106,15 @@ void analyze_jpgchunks(FILE *f) {
       fread(buffer, 1, 1, f);
       if (strcmp((char *)buffer, APP1) == 0) {
         printf("APP1 found\n");
+        printf("Buffer contents: %02X\n", buffer[0]);
+        unsigned char *lengthBuffer;
+        lengthBuffer = malloc(2*sizeof(unsigned char));
+        fread(lengthBuffer, 1, 2, f);
+        printf("New lengthbuffer contents: %02X%02X\n", lengthBuffer[0], lengthBuffer[1]);
+        int chunkLength;
+        chunkLength = standardLength(lengthBuffer);
+        printf("Returned chunklength is %i\n", chunkLength);
+        free(lengthBuffer);
         analyze_tiff(f);
       } else if (!strcmp((char *)buffer,superCd0) || !strcmp((char *)buffer,superCd1) || !strcmp((char *)buffer,superCd2)
                   || !strcmp((char *)buffer,superCd3) || !strcmp((char *)buffer,superCd4) || !strcmp((char *)buffer,superCd5)
