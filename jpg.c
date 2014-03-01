@@ -9,39 +9,44 @@
  * If it isn't a JPG file, return -1 and print nothing.
  */
 
+void analyze_IFD(FILE *f) {
+  unsigned char* ifdbuff;
+  ifdbuff = calloc(2, sizeof(unsigned char));
+  
+}
+
 void analyze_tiff(FILE *f) {
   printf("Inside analyze_tiff\n");
+  char randString[7] = {0x45, 0x78, 0x69, 0x66, 0x00, 0x00};
   char bigEndian[3] = {0x4d, 0x4d};
   char lilEndian[3] = {0x49, 0x49};
   char magicString[3] = {0x2a, 0x00};
-  
+  char offset[5] = {0x08, 0x00, 0x00, 0x00};
 
   unsigned char* tiffbuff;
-  tiffbuff = calloc(2, sizeof(unsigned char));
+  tiffbuff = calloc(14, sizeof(unsigned char));
   //this is endianness, 2 bytes
-  fread(tiffbuff, 1, 2, f);
-  printf("Tiffbuff contents: %02X%02X\n", tiffbuff[0], tiffbuff[1]);
-  if (!strcmp((char *)tiffbuff,lilEndian)) {
+  fread(tiffbuff, 1, 14, f);
+  //printf("Tiffbuff contents: %02X%02X\n", tiffbuff[0], tiffbuff[1]);
+  if (strncmp((char *)tiffbuff,randString, 6)) {
+    printf("Error on randString\n");
+  }
+  if (!strncmp((char *)tiffbuff+6,lilEndian, 2)) {
     printf("Little endian. All is well.\n");
-  } else if (!strcmp((char *)tiffbuff,bigEndian)) {
+  } else if (!strncmp((char *)tiffbuff+6,bigEndian, 2)) {
     printf("Big endian. This is an error.\n");
   }
-  fread(tiffbuff, 1, 2, f);
-  printf("Tiffbuff contents: %02X%02X\n", tiffbuff[0], tiffbuff[1]);
-  if (!strcmp((char *)tiffbuff,magicString)) {
+  //printf("Tiffbuff contents: %02X%02X\n", tiffbuff[0], tiffbuff[1]);
+  if (!strncmp((char *)tiffbuff+8,magicString, 2)) {
     printf("Magic string matches.\n");
   } else {
     printf("Magical error on magical string.\n");
   }
-  tiffbuff = calloc(4, sizeof(unsigned char));
-  fread(tiffbuff, 1, 4, f);
-  
-
-
-
-
-
-
+  if (!strncmp((char *)tiffbuff+10,offset, 4)) {
+    analyze_IFD(f); 
+  } else {
+    printf("Offset is not 8\n");
+  }
   free(tiffbuff);
   return;
 
