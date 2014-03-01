@@ -197,7 +197,7 @@ int printtIMEstamp(FILE *f, unsigned char *chunktype, int chunklength) {
   return retval;
 }
 
-long int chunk_length(unsigned char* buffer) {
+unsigned long int chunk_length(unsigned char* buffer) {
   /*HOW IT WORKS: Take our initial buffer, store the values into a new buffer
   with leading 0s using the command sprintf. Then use strtol to convert
   our new string "buffer2" into int value using base 16."*/
@@ -207,7 +207,7 @@ long int chunk_length(unsigned char* buffer) {
 
   sprintf((char *) buffer2, "%02X%02X%02X%02X",(unsigned char) buffer[0],(unsigned char) buffer[1],(unsigned char) buffer[2],(unsigned char) buffer[3]);
 
-  long int lint0 = strtol((char *) buffer2, NULL, 16);  
+  unsigned long int lint0 = strtoul((char *) buffer2, NULL, 16);  
 
   free(buffer2);
  
@@ -235,10 +235,10 @@ int analyze_chunks(FILE *f) {
   fseek(f, 0L, SEEK_END);
   filesize = (long int) ftell(f) + 8;
   fseek(f, 8, SEEK_SET);
-  int chunklength;  
+  size_t chunklength;  
   while(fread(buffer, 1, 8, f) == 8 && retval != -1) {
     filesize -= 8;
-    chunklength = chunk_length(buffer);
+    chunklength = (size_t) chunk_length(buffer);
     if ((0 > chunklength) || (chunklength >  filesize)) {
       printf("Length of chunk outside filesize./n");
       free(buffer);
@@ -277,7 +277,7 @@ int analyze_chunks(FILE *f) {
   }
   else {
     //Something bad happened
-    printf("Error reading file.");
+    printf("Error reading file.\n");
     free(buffer);
     return -1;
   }
@@ -308,7 +308,7 @@ int analyze_png(FILE *f) {
       return -1;
     }
   } else {
-    printf("Not a valid PNG file or read error.\n");
+    printf("Not a valid PNG file or read error.");
     free(buffer);
     return -1;
   }
