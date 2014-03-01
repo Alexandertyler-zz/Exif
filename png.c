@@ -10,16 +10,16 @@ int printzTXt(FILE *f, unsigned char *chunktype, int chunklength) {
 
   //fread buffer
   unsigned char *buffer;
-  buffer = (unsigned char *) malloc((chunklength+4)*sizeof(char));
+  buffer = (unsigned char *) calloc(1+(chunklength+4), sizeof(char));
 
   unsigned char *check_sum;
-  check_sum = (unsigned char*) malloc(4*sizeof(char));
+  check_sum = (unsigned char *) calloc(9, sizeof(char));
 
   //Plaintext value/key parts of text chunk, maximum length is chunklength
   unsigned char *value_segment;
-  value_segment = (unsigned char *) malloc(chunklength*sizeof(char));
+  value_segment = (unsigned char *) calloc(chunklength,sizeof(char));
   unsigned char *key_segment;
-  key_segment = (unsigned char *) malloc(chunklength*sizeof(char));
+  key_segment = (unsigned char *) calloc(chunklength,sizeof(char));
 
   //Start with a 1000 byte keylen, increase if needed later in function
   uLongf keylen = 1000;
@@ -27,8 +27,6 @@ int printzTXt(FILE *f, unsigned char *chunktype, int chunklength) {
   //uncompress() strange error on some lines, decided to calloc to be sure %s knows when to end string
   char *uncompressed_key;
   uncompressed_key = calloc(keylen, sizeof(unsigned char));
-
-
 
   if (fread(buffer,1,chunklength+4,f) == (chunklength+4)) {
     retval = 1;
@@ -73,10 +71,11 @@ int printzTXt(FILE *f, unsigned char *chunktype, int chunklength) {
 
     //Check checksum
     sprintf((char *) check_sum,"%02X%02X%02X%02X", (unsigned char) buffer[chunklength], (unsigned char) buffer[chunklength+1], (unsigned char) buffer[chunklength+2], (unsigned char) buffer[chunklength+3]);
+    //check_sum[4] = 0x00;
     int checksum = (int) strtol((char *) check_sum, NULL, 16);
     unsigned int calculated_checksum = crc32(0, Z_NULL, 0);
-    calculated_checksum = crc32(calculated_checksum, (unsigned char*) chunktype, 4);
-    calculated_checksum = crc32(calculated_checksum, (unsigned char*) buffer, chunklength);
+    calculated_checksum = crc32(calculated_checksum, chunktype, 4);
+    calculated_checksum = crc32(calculated_checksum, buffer, chunklength);
     if (calculated_checksum != checksum) {
       printf("Error, incorrect checksum.");
       retval = -1;
@@ -100,13 +99,13 @@ int printtEXt(FILE *f, unsigned char *chunktype, int chunklength) {
   //Declarations
   int retval;
   unsigned char *buffer;
-  buffer = (unsigned char *) malloc((chunklength+4)*sizeof(char));
+  buffer = (unsigned char *) calloc(1+(chunklength+4),sizeof(char));
   unsigned char *check_sum;
-  check_sum = (unsigned char *) malloc(4*sizeof(char));
+  check_sum = (unsigned char *) calloc(9,sizeof(char));
   unsigned char *value_segment;
   unsigned char *key_segment;
-  key_segment = (unsigned char *) malloc(chunklength*sizeof(char));
-  value_segment = (unsigned char *) malloc(chunklength*sizeof(char));
+  key_segment = (unsigned char *) calloc(chunklength,sizeof(char));
+  value_segment = (unsigned char *) calloc(chunklength,sizeof(char));
 
   if (fread(buffer,1,chunklength+4,f) == (chunklength+4)) {
     retval = 1;
@@ -165,9 +164,9 @@ int printtIMEstamp(FILE *f, unsigned char *chunktype, int chunklength) {
   unsigned char *check_sum;
   int year;
   int retval; 
-  year_array = (unsigned char *) malloc(2*sizeof(char));
-  buffer = (unsigned char *) malloc(11*sizeof(char));
-  check_sum = (unsigned char *) malloc(4*sizeof(char));
+  year_array = (unsigned char *) calloc(5,sizeof(char));
+  buffer = (unsigned char *) calloc(12,sizeof(char));
+  check_sum = (unsigned char *) calloc(9,sizeof(char));
   if (fread(buffer,1,11,f) == 11) { 
     retval = 1;
 
@@ -187,7 +186,6 @@ int printtIMEstamp(FILE *f, unsigned char *chunktype, int chunklength) {
       printf("Error, incorrect checksum.");
       retval = -1;
     }
-
   }
   else {
     printf("Error, incorrectly formatted tIME chunk");
@@ -205,7 +203,7 @@ long int chunk_length(unsigned char* buffer) {
   our new string "buffer2" into int value using base 16."*/
 
   unsigned char *buffer2;
-  buffer2 = malloc(4*sizeof(char));
+  buffer2 = calloc(9,sizeof(char));
 
   sprintf((char *) buffer2, "%02X%02X%02X%02X",(unsigned char) buffer[0],(unsigned char) buffer[1],(unsigned char) buffer[2],(unsigned char) buffer[3]);
 
@@ -221,8 +219,8 @@ int analyze_chunks(FILE *f) {
   unsigned char tEXt[4] = {0x74, 0x45, 0x58, 0x74};
   unsigned char zTXt[4] = {0x7a, 0x54, 0x58, 0x74};
   unsigned char tIME[4] = {0x74, 0x49, 0x4d, 0x45};
-
-  int retval; 
+  
+  int retval = 1; 
   /* Idea for proceeding: we need to go through chunks of code. Chunks take the form:
      length of data portion of chunk (4 bytes) chunktype (4bytes) data (variable bytes) checksum (4 bytes) 
      So process first 8 bytes of next chunk. If the last 4 bytes match chunktypes above, then process
@@ -231,22 +229,42 @@ int analyze_chunks(FILE *f) {
 
   /* This function only analyzes 8 bytes at a time */
   unsigned char *buffer;
-  buffer = (unsigned char *) malloc(8*sizeof(char));
-  
+  buffer = (unsigned char *) calloc(9,sizeof(char));
+  // Get file size to make sure chunklength isnt too big
+  long int filesize;
+  fseek(f, 0L, SEEK_END);
+  filesize = (long int) ftell(f) + 8;
+  fseek(f, 8, SEEK_SET);
   int chunklength;  
   while(fread(buffer, 1, 8, f) == 8 && retval != -1) {
-  
+    filesize -= 8;
     chunklength = chunk_length(buffer);
-
+    if ((0 > chunklength) || (chunklength >  filesize)) {
+      printf("Length of chunk outside filesize./n");
+      free(buffer);
+      return -1;
+    }
     //Opted for strncmp here because wouldn't match with strcmp
     if (strncmp((char *) buffer+4, (char *) tEXt,4) == 0) {
-      retval = printtEXt(f, buffer+4, chunklength);
+      if (chunklength != 0) {
+	retval = printtEXt(f, buffer+4, chunklength);
+      } else {
+	retval = -1;
+      }
     }
     else if (strncmp((char *) buffer+4, (char * ) zTXt,4) == 0) {
-      retval = printzTXt(f, buffer+4, chunklength);
+      if (chunklength != 0) {
+	retval = printzTXt(f, buffer+4, chunklength);
+      } else {
+	retval = -1;
+      }
     }
     else if (strncmp((char *) buffer+4, (char *) tIME,4) == 0) {
-      retval = printtIMEstamp(f, buffer+4, chunklength);
+      if (chunklength != 0) {
+	retval = printtIMEstamp(f, buffer+4, chunklength);
+      } else {
+	retval = -1;
+      }
     } 
     else {   
       fseek(f,chunklength+4, SEEK_CUR);
@@ -276,7 +294,7 @@ int analyze_png(FILE *f) {
   int retval;
   //Read in first 8 bytes and compare with standard PNG intro to determine if PNG file 
   unsigned char *buffer;
-  buffer = (unsigned char *) malloc(8*sizeof(char));
+  buffer = (unsigned char *) calloc(9,sizeof(char));
 
   //Reads into buffer, each element 1 byte, read 8 bytes, read from input stream f
   //Makes sure the header matches PNG and fread was successful
