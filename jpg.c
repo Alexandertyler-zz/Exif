@@ -20,9 +20,10 @@ long int tagLength(unsigned char* buffer) {
 } 
 
 void analyze_tag(FILE *f) {
+  //reverse these
   char DocName[3] = {0x01, 0x0d};
   char ImgDesc[3] = {0x01, 0x0e};
-  char Make[3] = {0x01, 0x0f};
+  char Make[3] = {0x0f, 0x01};
   char Model[3] = {0x01, 0x10};
   char Software[3] = {0x01, 0x31};
   char DateTime[3] = {0x01, 0x32};
@@ -30,46 +31,88 @@ void analyze_tag(FILE *f) {
   char HostPC[3] = {0x01, 0x3c};
   char Copyright[3] = {0x82, 0x98};
   char RSF[3] = {0xa0, 0x04};
-  char DTOriginal = {0x90, 0x03};
-  char DTDigitized = {0x90, 0x04};
-  char MakerNote = {0x92, 0x7c};
-  char UserComment = {0x92, 0x86};
-  char ImageUniqueID = {0xa4, 0x20};
+  char DTOriginal[3] = {0x90, 0x03};
+  char DTDigitized[3] = {0x90, 0x04};
+  char MakerNote[3] = {0x92, 0x7c};
+  char UserComment[3] = {0x92, 0x86};
+  char ImageUniqueID[3] = {0xa4, 0x20};
 
-  char ExifIFD = {0x87, 0x69};
+  char ExifIFD[3] = {0x87, 0x69};
 
  
-
-
+  //int retval;
+  int offset;
+  int curr;
   unsigned char* tagbuff;
   unsigned char* lenbuff;
   int length;
-  tagbuff = calloc(4, sizeof(unsigned char));
+  tagbuff = calloc(5, sizeof(unsigned char));
   lenbuff = calloc(4, sizeof(unsigned char));
   fread(tagbuff, 1, 4, f);
   fread(lenbuff, 1, 4, f);
   length = (int) tagLength(lenbuff);
+  int skip_offset = 0;
+  if (length <= 4) {
+    skip_offset = 1;
+  }
+  //retval = 1;
   if (!strncmp((char *)tagbuff,ExifIFD,2)) {
-
+    printf("Yo we found the exif.");
   } else if (!strncmp((char *)tagbuff,DocName,2)) {
-    
+    printf("DocumentName: ");
+    unsigned char *buffer;
+    if(skip_offset) {
+      length = 4;
+    } else {
+      unsigned char* offsetbuf;
+      offsetbuf = calloc(4, sizeof(char));
+      fread(offsetbuf, 1, 4, f);
+      offset = (int) tagLength(offsetbuf);
+      free(offsetbuf);
+      curr = ftell(f);
+      fseek(f,offset-curr,SEEK_CUR);   
+    }   
+    buffer = calloc(length, sizeof(char));
+    if(fread(buffer,1,length,f) == length) {
+      printf("%s", buffer);
+      if(!skip_offset) {
+	fseek(f,-(offset-curr),SEEK_CUR);
+      }
+    } else {
+      printf("ERROR.");
+      //retval = -1;
+    }  
   } else if (!strncmp((char *)tagbuff,ImgDesc,2)) {
 
   } else if (!strncmp((char *)tagbuff,Make,2)) {
+    printf("WE GOT A MAKE!");
 
   } else if (!strncmp((char *)tagbuff,Model,2)) {
+
   } else if (!strncmp((char *)tagbuff,Software,2)) {
+
   } else if (!strncmp((char *)tagbuff,DateTime,2)) {
+
   } else if (!strncmp((char *)tagbuff,Artist,2)) {
+
   } else if (!strncmp((char *)tagbuff,HostPC,2)) {
+
   } else if (!strncmp((char *)tagbuff,Copyright,2)) {
+
   } else if (!strncmp((char *)tagbuff,RSF,2)) {
+
   } else if (!strncmp((char *)tagbuff,DTOriginal,2)) {
+
   } else if (!strncmp((char *)tagbuff,DTDigitized,2)) {
+
   } else if (!strncmp((char *)tagbuff,MakerNote,2)) {
+
   } else if (!strncmp((char *)tagbuff,UserComment,2)) {
+
   } else if (!strncmp((char *)tagbuff,ImageUniqueID,2)) {
+
   } else {
+    printf("NOT MATCHING SHIT: %02X:%02X\n",tagbuff[0],tagbuff[1]);
   }
 }
 
@@ -122,7 +165,7 @@ void analyze_tiff(FILE *f) {
     printf("Magical error on magical string.\n");
   }
   if (!strncmp((char *)tiffbuff+10,offset, 4)) {
-    analyze_IFD_0(f); 
+    analyze_IFD(f); 
   } else {
     printf("Offset is not 8\n");
   }
