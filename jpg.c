@@ -46,11 +46,18 @@ void analyze_tag(FILE *f) {
   int curr;
   unsigned char* tagbuff;
   unsigned char* lenbuff;
+  unsigned char* offsetbuff;
   int length;
-  tagbuff = calloc(5, sizeof(unsigned char));
+  // tag name and data type
+  tagbuff = calloc(4, sizeof(unsigned char));
+  // count
   lenbuff = calloc(4, sizeof(unsigned char));
+  // offset
+  offsetbuff = calloc(4, sizeof(char));
+  
   fread(tagbuff, 1, 4, f);
   fread(lenbuff, 1, 4, f);
+  fread(offsetbuff, 1, 4, f);
   length = (int) tagLength(lenbuff);
   int skip_offset = 0;
   if (length <= 4) {
@@ -64,25 +71,20 @@ void analyze_tag(FILE *f) {
     unsigned char *buffer;
     if(skip_offset) {
       length = 4;
-    } else {
-      unsigned char* offsetbuf;
-      offsetbuf = calloc(4, sizeof(char));
-      fread(offsetbuf, 1, 4, f);
-      offset = (int) tagLength(offsetbuf);
-      free(offsetbuf);
+      printf("%s", offsetbuff);
+    } else {  
+      offset = (int) tagLength(offsetbuff);
       curr = ftell(f);
-      fseek(f,offset-curr,SEEK_CUR);   
-    }   
-    buffer = calloc(length, sizeof(char));
-    if(fread(buffer,1,length,f) == length) {
-      printf("%s", buffer);
-      if(!skip_offset) {
-	fseek(f,-(offset-curr),SEEK_CUR);
-      }
-    } else {
-      printf("ERROR.");
+      fseek(f,offset-curr,SEEK_CUR);    
+      buffer = calloc(length, sizeof(char));
+      if(fread(buffer,1,length,f) == length) {
+	printf("%s", buffer);
+	fseek(f,(-offset-curr),SEEK_CUR);
+      } else {
+	printf("ERROR.");
       //retval = -1;
-    }  
+      }  
+    }
   } else if (!strncmp((char *)tagbuff,ImgDesc,2)) {
 
   } else if (!strncmp((char *)tagbuff,Make,2)) {
