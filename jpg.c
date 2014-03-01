@@ -8,40 +8,89 @@
  * If it is a JPG file, print out all relevant metadata and return 0.
  * If it isn't a JPG file, return -1 and print nothing.
  */
+void analyze_tag(FILE *f) {
+  char DocName[3] = {0x01, 0x0d};
+  char ImgDesc[3] = {0x01, 0x0e};
+  char Make[3] = {0x01, 0x0f};
+  char Model[3] = {0x01, 0x10};
+  char Software[3] = {0x01, 0x31};
+  char DateTime[3] = {0x01, 0x32};
+  char Artist[3] = {0x01, 0x3b};
+  char HostPC[3] = {0x01, 0x3c};
+  char Copyright[3] = {0x82, 0x98};
+  char RSF[3] = {0xa0, 0x04};
+  char DTOriginal = {0x90, 0x03};
+  char DTDigitized = {0x90, 0x04};
+  char MakerNote = {0x92, 0x7c};
+  char UserComment = {0x92, 0x86};
+  char ImageUniqueID = {0xa4, 0x20};
+
+  char ExifIFD = {0x87, 0x69};
+
+ 
+
+
+  unsigned char* tagbuff;
+  tagbuff = calloc(8, sizeof(unsigned char));
+  fread(tagbuff, 1, 8, f);
+  if (!strncmp((char *)tagbuff,ExifIFD,2)) {
+  } else if (!strn  
+    
+}
+
+
+void analyze_IFD(FILE *f) {
+  unsigned char* ifdbuff;
+  unsigned char* lenbuff;
+  ifdbuff = calloc(2, sizeof(unsigned char));
+  fread(ifdbuff, 1, 2, f);
+  lenbuff = calloc(2, sizeof(unsigned char));
+  printf("ifdbuff is: %02X%02X\n", ifdbuff[0], ifdbuff[1]);
+  sprintf((char *) lenbuff, "%02x%02X", ifdbuff[1], ifdbuff[0]);
+  char *end;
+  long int lint0 = strtol((char *) lenbuff, &end, 16);
+  free(lenbuff);
+  free(ifdbuff);
+  printf("Number of tags is: %li\n", lint0);
+  while (lint0 >= 0) {
+    printf("Analyzing tag.\n");
+    analyze_tag(f);
+    lint0--;
+  }
+}
 
 void analyze_tiff(FILE *f) {
   printf("Inside analyze_tiff\n");
+  char randString[7] = {0x45, 0x78, 0x69, 0x66, 0x00, 0x00};
   char bigEndian[3] = {0x4d, 0x4d};
   char lilEndian[3] = {0x49, 0x49};
   char magicString[3] = {0x2a, 0x00};
-  
+  char offset[5] = {0x08, 0x00, 0x00, 0x00};
 
   unsigned char* tiffbuff;
-  tiffbuff = calloc(2, sizeof(unsigned char));
+  tiffbuff = calloc(14, sizeof(unsigned char));
   //this is endianness, 2 bytes
-  fread(tiffbuff, 1, 2, f);
-  printf("Tiffbuff contents: %02X%02X\n", tiffbuff[0], tiffbuff[1]);
-  if (!strcmp((char *)tiffbuff,lilEndian)) {
+  fread(tiffbuff, 1, 14, f);
+  //printf("Tiffbuff contents: %02X%02X\n", tiffbuff[0], tiffbuff[1]);
+  if (strncmp((char *)tiffbuff,randString, 6)) {
+    printf("Error on randString\n");
+  }
+  if (!strncmp((char *)tiffbuff+6,lilEndian, 2)) {
     printf("Little endian. All is well.\n");
-  } else if (!strcmp((char *)tiffbuff,bigEndian)) {
+  } else if (!strncmp((char *)tiffbuff+6,bigEndian, 2)) {
     printf("Big endian. This is an error.\n");
   }
-  fread(tiffbuff, 1, 2, f);
-  printf("Tiffbuff contents: %02X%02X\n", tiffbuff[0], tiffbuff[1]);
-  if (!strcmp((char *)tiffbuff,magicString)) {
+  //printf("Tiffbuff contents: %02X%02X\n", tiffbuff[0], tiffbuff[1]);
+  if (!strncmp((char *)tiffbuff+8,magicString, 2)) {
     printf("Magic string matches.\n");
   } else {
     printf("Magical error on magical string.\n");
   }
-  tiffbuff = calloc(4, sizeof(unsigned char));
-  fread(tiffbuff, 1, 4, f);
-  
-
-
-
-
-
-
+  if (!strncmp((char *)tiffbuff+10,offset, 4)) {
+    analyze_IFD_0(f); 
+  } else {
+    printf("Offset is not 8\n");
+  }
   free(tiffbuff);
   return;
 
