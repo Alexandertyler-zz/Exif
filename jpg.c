@@ -169,7 +169,7 @@ void analyze_IFD(FILE *f) {
 }
 
 void analyze_tiff(FILE *f) {
-  printf("Inside analyze_tiff\n");
+  //printf("Inside analyze_tiff\n");
   char randString[7] = {0x45, 0x78, 0x69, 0x66, 0x00, 0x00};
   char bigEndian[3] = {0x4d, 0x4d};
   char lilEndian[3] = {0x49, 0x49};
@@ -282,7 +282,7 @@ void analyze_jpgchunks(FILE *f) {
         //printf("Superchunk engaged.\n");
         superChunk_walk(f);
       } else if (strcmp((char *)buffer, super_chunk_end) == 0) {
-        printf("End of file\n");
+        //printf("End of file\n");
         return;
       } else {
         //printf("Standard chunk. Finding length.\n");
