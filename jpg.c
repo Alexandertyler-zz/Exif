@@ -45,6 +45,14 @@ void print_tag(FILE *f, unsigned char * offsetbuff, int skip_offset, int length,
   }
 }
   
+void handle_exif(FILE *f, unsigned char * offsetbuff, int tiff) {
+  int curr_pos = ftell(f);
+  int offset = (int) tagLength(offsetbuff);
+  curr_pos -= tiff;
+  fseek(f, (offset - curr_pos)-2, SEEK_CUR);
+  analyze_IFD(f);
+}
+
 
 void analyze_tag(FILE *f, int tiff) {
   //reverse these
@@ -87,7 +95,7 @@ void analyze_tag(FILE *f, int tiff) {
   }
   //retval = 1;
   if (!strncmp((char *)tagbuff,ExifIFD,2)) {
-    printf("Yo we found the exif.");
+    handle_exif(f, offsetbuff, tiff);
   } else if (!strncmp((char *)tagbuff,DocName,2)) {
     printf("DocumentName: ");
     print_tag(f, offsetbuff, skip_offset, length, tiff);
