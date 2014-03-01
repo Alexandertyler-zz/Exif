@@ -308,7 +308,7 @@ int analyze_png(FILE *f) {
       return -1;
     }
   } else {
-    printf("Not a valid PNG file or read error.");
+    printf("Not a valid PNG file or read error.\n");
     free(buffer);
     return -1;
   }
