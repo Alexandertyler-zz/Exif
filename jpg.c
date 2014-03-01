@@ -20,7 +20,33 @@ long int tagLength(unsigned char* buffer) {
   return lint0;
 } 
 
-void analyze_tag(FILE *f) {
+void print_tag(FILE *f, unsigned char * offsetbuff, int skip_offset, int length, int tiff) {
+  unsigned char *buffer;
+  if(skip_offset) {
+    length = 4;
+    printf("%s", offsetbuff);
+  } 
+  else {  
+    int offset = (int) tagLength(offsetbuff);
+    int curr = ftell(f);
+    //printf("current position: %d, offset from tiff: %d", curr, offset);
+    curr -= tiff;
+    fseek(f,(offset-curr)-2,SEEK_CUR);    
+    buffer = calloc(length, sizeof(char));
+    if(fread(buffer,1,length,f) == length) {
+      printf("%s\n", buffer);
+      fseek(f,-((offset-curr)-2),SEEK_CUR);
+      free(buffer);
+    } else {
+      printf("ERROR.");
+      free(buffer);
+      //retval = -1;
+    }  
+  }
+}
+  
+
+void analyze_tag(FILE *f, int tiff) {
   //reverse these
   char DocName[3] = {0x0d, 0x01};
   char ImgDesc[3] = {0x0e, 0x01};
@@ -40,10 +66,6 @@ void analyze_tag(FILE *f) {
 
   char ExifIFD[3] = {0x69, 0x87};
 
- 
-  //int retval;
-  int offset;
-  int curr;
   unsigned char* tagbuff;
   unsigned char* lenbuff;
   unsigned char* offsetbuff;
@@ -68,54 +90,51 @@ void analyze_tag(FILE *f) {
     printf("Yo we found the exif.");
   } else if (!strncmp((char *)tagbuff,DocName,2)) {
     printf("DocumentName: ");
-    unsigned char *buffer;
-    if(skip_offset) {
-      length = 4;
-      printf("%s", offsetbuff);
-    } else {  
-      offset = (int) tagLength(offsetbuff);
-      curr = ftell(f);
-      fseek(f,offset-curr,SEEK_CUR);    
-      buffer = calloc(length, sizeof(char));
-      if(fread(buffer,1,length,f) == length) {
-	printf("%s", buffer);
-	fseek(f,(-offset-curr),SEEK_CUR);
-      } else {
-	printf("ERROR.");
-      //retval = -1;
-      }  
-    }
+    print_tag(f, offsetbuff, skip_offset, length, tiff);
   } else if (!strncmp((char *)tagbuff,ImgDesc,2)) {
-
+    printf("ImageDescription: ");
+    print_tag(f, offsetbuff, skip_offset, length, tiff);
   } else if (!strncmp((char *)tagbuff,Make,2)) {
-    printf("WE GOT A MAKE!");
-
+    printf("Make: ");
+    print_tag(f, offsetbuff, skip_offset, length, tiff);
   } else if (!strncmp((char *)tagbuff,Model,2)) {
-
+    printf("Model: ");
+    print_tag(f, offsetbuff, skip_offset, length, tiff);
   } else if (!strncmp((char *)tagbuff,Software,2)) {
-
+    printf("Software: ");
+    print_tag(f, offsetbuff, skip_offset, length, tiff);
   } else if (!strncmp((char *)tagbuff,DateTime,2)) {
-
+    printf("DateTime: ");
+    print_tag(f, offsetbuff, skip_offset, length, tiff);
   } else if (!strncmp((char *)tagbuff,Artist,2)) {
-
+    printf("Artist: ");
+    print_tag(f, offsetbuff, skip_offset, length, tiff);
   } else if (!strncmp((char *)tagbuff,HostPC,2)) {
-
+    printf("HostComputer: ");
+    print_tag(f, offsetbuff, skip_offset, length, tiff);
   } else if (!strncmp((char *)tagbuff,Copyright,2)) {
-
+    printf("Copyright: ");
+    print_tag(f, offsetbuff, skip_offset, length, tiff);
   } else if (!strncmp((char *)tagbuff,RSF,2)) {
-
+    printf("RelatedSoundFile: ");
+    print_tag(f, offsetbuff, skip_offset, length, tiff);
   } else if (!strncmp((char *)tagbuff,DTOriginal,2)) {
-
+    printf("DateTimeOriginal: ");
+    print_tag(f, offsetbuff, skip_offset, length, tiff);
   } else if (!strncmp((char *)tagbuff,DTDigitized,2)) {
-
+    printf("DateTimeDigitized: ");
+    print_tag(f, offsetbuff, skip_offset, length, tiff);
   } else if (!strncmp((char *)tagbuff,MakerNote,2)) {
-
+    printf("MakerNote: ");
+    print_tag(f, offsetbuff, skip_offset, length, tiff);
   } else if (!strncmp((char *)tagbuff,UserComment,2)) {
-
+    printf("UserComment: ");
+    print_tag(f, offsetbuff, skip_offset, length, tiff);
   } else if (!strncmp((char *)tagbuff,ImageUniqueID,2)) {
-
+    printf("ImageUniqueID: ");
+    print_tag(f, offsetbuff, skip_offset, length, tiff);
   } else {
-    printf("NOT MATCHING SHIT: %02X:%02X\n",tagbuff[0],tagbuff[1]);
+    //printf("NOT MATCHING SHIT: %02X:%02X\n",tagbuff[0],tagbuff[1]);
   }
 }
 
@@ -126,16 +145,17 @@ void analyze_IFD(FILE *f) {
   ifdbuff = calloc(2, sizeof(unsigned char));
   fread(ifdbuff, 1, 2, f);
   lenbuff = calloc(2, sizeof(unsigned char));
-  printf("ifdbuff is: %02X%02X\n", ifdbuff[0], ifdbuff[1]);
+  //printf("ifdbuff is: %02X%02X\n", ifdbuff[0], ifdbuff[1]);
   sprintf((char *) lenbuff, "%02x%02X", ifdbuff[1], ifdbuff[0]);
   char *end;
   long int lint0 = strtol((char *) lenbuff, &end, 16);
   free(lenbuff);
   free(ifdbuff);
-  printf("Number of tags is: %li\n", lint0);
-  while (lint0 >= 0) {
-    printf("Analyzing tag.\n");
-    analyze_tag(f);
+  //printf("Number of tags is: %li\n", lint0);
+  int beginning_of_TIFF = ftell(f)-8;
+  while (lint0 > 0) {
+    //printf("Analyzing tag.\n");
+    analyze_tag(f, beginning_of_TIFF);
     lint0--;
   }
 }
@@ -157,13 +177,13 @@ void analyze_tiff(FILE *f) {
     printf("Error on randString\n");
   }
   if (!strncmp((char *)tiffbuff+6,lilEndian, 2)) {
-    printf("Little endian. All is well.\n");
+    //printf("Little endian. All is well.\n");
   } else if (!strncmp((char *)tiffbuff+6,bigEndian, 2)) {
     printf("Big endian. This is an error.\n");
   }
   //printf("Tiffbuff contents: %02X%02X\n", tiffbuff[0], tiffbuff[1]);
   if (!strncmp((char *)tiffbuff+8,magicString, 2)) {
-    printf("Magic string matches.\n");
+    //printf("Magic string matches.\n");
   } else {
     printf("Magical error on magical string.\n");
   }
@@ -184,10 +204,10 @@ void superChunk_walk(FILE *f) {
   parser = calloc(1, sizeof(unsigned char));
   while(fread(parser, 1, 1, f)) {
     if (!strcmp((char *)parser,chunk_front)) {      
-      printf("Chunk front in super chunk: %02X\n", parser[0]);
+      //printf("Chunk front in super chunk: %02X\n", parser[0]);
       fread(parser, 1, 1, f);
       if (strcmp((char *)parser,empty_chunk)) {
-        printf("Not an empty chunk: %02X\n", parser[0]);
+        //printf("Not an empty chunk: %02X\n", parser[0]);
         fseek(f, (-2), SEEK_CUR);
         free(parser);
         return; 
@@ -199,12 +219,12 @@ void superChunk_walk(FILE *f) {
 long int standardLength(unsigned char* buffer) {
   unsigned char* buffer2;
   buffer2 = malloc(2*sizeof(unsigned char));
-  printf("Buffer2 is: %02X%02X\n", buffer[0], buffer[1]);
+  //printf("Buffer2 is: %02X%02X\n", buffer[0], buffer[1]);
   sprintf((char *) buffer2, "%02x%02X", buffer[0], buffer[1]);
   char *end;
   long int lint0 = strtol((char *) buffer2, &end, 16);
   free(buffer2);
-  printf("Length is: %li\n", lint0);
+  //printf("Length is: %li\n", lint0);
   return lint0;
 } 
 
@@ -232,44 +252,45 @@ void analyze_jpgchunks(FILE *f) {
   buffer = malloc(1*sizeof(unsigned char));
   while(fread(buffer, 1, 1, f) == 1) {
     if (strcmp((char *)buffer, chunk_front) == 0) {
-      printf("Matched front of chunk\n");
+      //printf("Matched front of chunk\n");
       fread(buffer, 1, 1, f);
       if (strcmp((char *)buffer, APP1) == 0) {
-        printf("APP1 found\n");
-        printf("Buffer contents: %02X\n", buffer[0]);
+        //printf("APP1 found\n");
+        //printf("Buffer contents: %02X\n", buffer[0]);
         unsigned char *lengthBuffer;
         lengthBuffer = malloc(2*sizeof(unsigned char));
         fread(lengthBuffer, 1, 2, f);
-        printf("New lengthbuffer contents: %02X%02X\n", lengthBuffer[0], lengthBuffer[1]);
+        //printf("New lengthbuffer contents: %02X%02X\n", lengthBuffer[0], lengthBuffer[1]);
         int chunkLength;
         chunkLength = standardLength(lengthBuffer);
-        printf("Returned chunklength is %i\n", chunkLength);
+        //printf("Returned chunklength is %i\n", chunkLength);
+	chunkLength--;
         free(lengthBuffer);
         analyze_tiff(f);
       } else if (!strcmp((char *)buffer,superCd0) || !strcmp((char *)buffer,superCd1) || !strcmp((char *)buffer,superCd2)
                   || !strcmp((char *)buffer,superCd3) || !strcmp((char *)buffer,superCd4) || !strcmp((char *)buffer,superCd5)
                   || !strcmp((char *)buffer,superCd6) || !strcmp((char *)buffer,superCd7) || !strcmp((char *)buffer,superCd8)
                   || !strcmp((char *)buffer,superCda)) {
-        printf("Superchunk engaged.\n");
+        //printf("Superchunk engaged.\n");
         superChunk_walk(f);
       } else if (strcmp((char *)buffer, super_chunk_end) == 0) {
         printf("End of file\n");
         return;
       } else {
-        printf("Standard chunk. Finding length.\n");
-        printf("Buffer contents: %02X\n", buffer[0]);
+        //printf("Standard chunk. Finding length.\n");
+        //printf("Buffer contents: %02X\n", buffer[0]);
         unsigned char *lengthBuffer;
         lengthBuffer = malloc(2*sizeof(unsigned char));
         fread(lengthBuffer, 1, 2, f);
-        printf("New lengthbuffer contents: %02X%02X\n", lengthBuffer[0], lengthBuffer[1]);
+        //printf("New lengthbuffer contents: %02X%02X\n", lengthBuffer[0], lengthBuffer[1]);
         int chunkLength;
         chunkLength = standardLength(lengthBuffer);
         fseek(f, chunkLength-2, SEEK_CUR);
         free(lengthBuffer);
       }
-      getchar();
+      //getchar();
     } else {
-      printf("No chunk front match.\n");
+      //printf("No chunk front match.\n");
     }
   }
   free(buffer);
@@ -284,18 +305,18 @@ int analyze_jpg(FILE *f) {
   fread(buffer, 1, 2, f);
   int i = 0;
   while (i < 2) {
-    printf("buffer is: %x\n", buffer[i]);
-    printf("jpg_SOI is: %x\n", jpg_SOI[i]);
+    //printf("buffer is: %x\n", buffer[i]);
+    //printf("jpg_SOI is: %x\n", jpg_SOI[i]);
     i++;
   }
   if (!strcmp((char *)buffer,(char *)jpg_SOI)) {
     fseek(f, -2, SEEK_CUR);
     analyze_jpgchunks(f);
-    printf("JPG Confirmed.\n");
+    //printf("JPG Confirmed.\n");
     free(buffer);
     return 1;
   } else {
-    printf("We've lost contact with the jpg sir.\n");
+    //printf("We've lost contact with the jpg sir.\n");
     free(buffer);
     return -1;
   }
