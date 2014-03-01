@@ -8,6 +8,17 @@
  * If it is a JPG file, print out all relevant metadata and return 0.
  * If it isn't a JPG file, return -1 and print nothing.
  */
+long int tagLength(unsigned char* buffer) {
+  unsigned char* buffer2;
+  buffer2 = calloc(4, sizeof(unsigned char));
+  sprintf((char *) buffer2, "%02x%02X%02X%02X", buffer[3], buffer[2], buffer[1], buffer[0]);
+  char *end;
+  long int lint0 = strtol((char *) buffer2, &end, 16);
+  free(buffer2);
+  //printf("Length is: %li\n", lint0);
+  return lint0;
+} 
+
 void analyze_tag(FILE *f) {
   char DocName[3] = {0x01, 0x0d};
   char ImgDesc[3] = {0x01, 0x0e};
@@ -31,11 +42,35 @@ void analyze_tag(FILE *f) {
 
 
   unsigned char* tagbuff;
-  tagbuff = calloc(8, sizeof(unsigned char));
-  fread(tagbuff, 1, 8, f);
+  unsigned char* lenbuff;
+  int length;
+  tagbuff = calloc(4, sizeof(unsigned char));
+  lenbuff = calloc(4, sizeof(unsigned char));
+  fread(tagbuff, 1, 4, f);
+  fread(lenbuff, 1, 4, f);
+  length = (int) tagLength(lenbuff);
   if (!strncmp((char *)tagbuff,ExifIFD,2)) {
-  } else if (!strn  
+
+  } else if (!strncmp((char *)tagbuff,DocName,2)) {
     
+  } else if (!strncmp((char *)tagbuff,ImgDesc,2)) {
+
+  } else if (!strncmp((char *)tagbuff,Make,2)) {
+
+  } else if (!strncmp((char *)tagbuff,Model,2)) {
+  } else if (!strncmp((char *)tagbuff,Software,2)) {
+  } else if (!strncmp((char *)tagbuff,DateTime,2)) {
+  } else if (!strncmp((char *)tagbuff,Artist,2)) {
+  } else if (!strncmp((char *)tagbuff,HostPC,2)) {
+  } else if (!strncmp((char *)tagbuff,Copyright,2)) {
+  } else if (!strncmp((char *)tagbuff,RSF,2)) {
+  } else if (!strncmp((char *)tagbuff,DTOriginal,2)) {
+  } else if (!strncmp((char *)tagbuff,DTDigitized,2)) {
+  } else if (!strncmp((char *)tagbuff,MakerNote,2)) {
+  } else if (!strncmp((char *)tagbuff,UserComment,2)) {
+  } else if (!strncmp((char *)tagbuff,ImageUniqueID,2)) {
+  } else {
+  }
 }
 
 
