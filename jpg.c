@@ -9,9 +9,18 @@
  * If it isn't a JPG file, return -1 and print nothing.
  */
 
-void analyze_IFD(FILE *f) {
-  unsigned char* ifdbuff;
+void analyze_IFD_0(FILE *f) {
+  unsigned char* ifdbuff, lenbuff;
   ifdbuff = calloc(2, sizeof(unsigned char));
+  fread(ifdbuff, 1, 2, f);
+  lenbuff = calloc(2, sizeof(unsigned char));
+  printf("ifdbuff is: %02X%02X\n", ifdbuff[0], ifdbuff[1]);
+  sprintf((char *) lenbuff, "%02x%02X", ifdbuff[0], ifdbuff[1]);
+  char *end;
+  long int lint0 = strtol((char *) lenbuff, &end, 16);
+  free(lenBuff);
+  free(ifdbuff);
+  printf("Length is: %li\n", lint0);
   
 }
 
@@ -43,7 +52,7 @@ void analyze_tiff(FILE *f) {
     printf("Magical error on magical string.\n");
   }
   if (!strncmp((char *)tiffbuff+10,offset, 4)) {
-    analyze_IFD(f); 
+    analyze_IFD_0(f); 
   } else {
     printf("Offset is not 8\n");
   }
