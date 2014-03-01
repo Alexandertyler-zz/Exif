@@ -8,6 +8,7 @@
  * If it is a JPG file, print out all relevant metadata and return 0.
  * If it isn't a JPG file, return -1 and print nothing.
  */
+
 long int tagLength(unsigned char* buffer) {
   unsigned char* buffer2;
   buffer2 = calloc(4, sizeof(unsigned char));
@@ -21,23 +22,23 @@ long int tagLength(unsigned char* buffer) {
 
 void analyze_tag(FILE *f) {
   //reverse these
-  char DocName[3] = {0x01, 0x0d};
-  char ImgDesc[3] = {0x01, 0x0e};
+  char DocName[3] = {0x0d, 0x01};
+  char ImgDesc[3] = {0x0e, 0x01};
   char Make[3] = {0x0f, 0x01};
-  char Model[3] = {0x01, 0x10};
-  char Software[3] = {0x01, 0x31};
-  char DateTime[3] = {0x01, 0x32};
-  char Artist[3] = {0x01, 0x3b};
-  char HostPC[3] = {0x01, 0x3c};
-  char Copyright[3] = {0x82, 0x98};
-  char RSF[3] = {0xa0, 0x04};
-  char DTOriginal[3] = {0x90, 0x03};
-  char DTDigitized[3] = {0x90, 0x04};
-  char MakerNote[3] = {0x92, 0x7c};
-  char UserComment[3] = {0x92, 0x86};
-  char ImageUniqueID[3] = {0xa4, 0x20};
+  char Model[3] = {0x10, 0x01};
+  char Software[3] = {0x31, 0x01};
+  char DateTime[3] = {0x32, 0x02};
+  char Artist[3] = {0x3b, 0x01};
+  char HostPC[3] = {0x3c, 0x01};
+  char Copyright[3] = {0x98, 0x82};
+  char RSF[3] = {0x04, 0x10};
+  char DTOriginal[3] = {0x03, 0x90};
+  char DTDigitized[3] = {0x04, 0x90};
+  char MakerNote[3] = {0x7c, 0x92};
+  char UserComment[3] = {0x86, 0x92};
+  char ImageUniqueID[3] = {0x20, 0xa4};
 
-  char ExifIFD[3] = {0x87, 0x69};
+  char ExifIFD[3] = {0x69, 0x87};
 
  
   //int retval;
