@@ -22,6 +22,7 @@ long int tagLength(unsigned char* buffer) {
 
 void print_tag(FILE *f, unsigned char * offsetbuff, int skip_offset, int length, int tiff) {
   unsigned char *buffer;
+  unsigned char ASCII_string[8] = {0x41, 0x53, 0x43, 0x49, 0x49, 0x00, 0x00, 0x00};
   if(skip_offset) {
     length = 4;
     printf("%s\n", offsetbuff);
@@ -32,10 +33,15 @@ void print_tag(FILE *f, unsigned char * offsetbuff, int skip_offset, int length,
     //printf("current position: %d, offset from tiff: %d", curr, offset);
     curr -= tiff;
     fseek(f,(offset-curr),SEEK_CUR);    
-    buffer = calloc(length, sizeof(char));
+    buffer = calloc(length+1, sizeof(char));
     if(fread(buffer,1,length,f) == length) {
+      if(!strncmp((char *) buffer, (char *) ASCII_string, 8)) {
+	printf("%s\n",buffer+8);
+      }
+      else {
       printf("%s\n", buffer);
-      fseek(f,-(((offset-curr)+length)),SEEK_CUR);
+      }
+      fseek(f,-(offset-curr)-length,SEEK_CUR);
       free(buffer);
     } else {
       printf("ERROR.");
@@ -49,10 +55,12 @@ void handle_exif(FILE *f, unsigned char * offsetbuff, int tiff) {
   int curr_pos = ftell(f);
   int offset = (int) tagLength(offsetbuff);
   curr_pos -= tiff;
+  int loc = ftell(f);
   fseek(f, (offset - curr_pos), SEEK_CUR);
   //printf("handleExif.\n");
-  analyze_IFD(f);
-  
+  analyze_IFD(f, tiff);
+  rewind(f);
+  fseek(f, loc+12, SEEK_CUR);
 }
 
 
@@ -63,22 +71,22 @@ void analyze_tag(FILE *f, int tiff) {
   char Make[3] = {0x0f, 0x01};
   char Model[3] = {0x10, 0x01};
   char Software[3] = {0x31, 0x01};
-  char DateTime[3] = {0x32, 0x02};
+  char DateTime[3] = {0x32, 0x01};
   char Artist[3] = {0x3b, 0x01};
   char HostPC[3] = {0x3c, 0x01};
   char Copyright[3] = {0x98, 0x82};
-  char RSF[3] = {0x04, 0x10};
+  char RSF[3] = {0x04, 0xa0};
   char DTOriginal[3] = {0x03, 0x90};
   char DTDigitized[3] = {0x04, 0x90};
   char MakerNote[3] = {0x7c, 0x92};
   char UserComment[3] = {0x86, 0x92};
   char ImageUniqueID[3] = {0x20, 0xa4};
-
   char ExifIFD[3] = {0x69, 0x87};
 
   unsigned char* tagbuff;
   unsigned char* lenbuff;
   unsigned char* offsetbuff;
+  //unsigned char* exifbuff;
   int length;
   // tag name and data type
   tagbuff = calloc(4, sizeof(unsigned char));
@@ -100,8 +108,9 @@ void analyze_tag(FILE *f, int tiff) {
   }
   //retval = 1;
   if (!strncmp((char *)tagbuff,ExifIFD,2)) {
-    printf("Exif found.\n");
+    //printf("Exif found.\n");
     handle_exif(f, offsetbuff, tiff);
+    //strncpy(offsetbuff, exifbuff, 4);
   } else if (!strncmp((char *)tagbuff,DocName,2)) {
     printf("DocumentName: ");
     print_tag(f, offsetbuff, skip_offset, length, tiff);
@@ -143,6 +152,7 @@ void analyze_tag(FILE *f, int tiff) {
     print_tag(f, offsetbuff, skip_offset, length, tiff);
   } else if (!strncmp((char *)tagbuff,UserComment,2)) {
     printf("UserComment: ");
+    //fseek(f, 8, SEEK_CUR);
     print_tag(f, offsetbuff, skip_offset, length, tiff);
   } else if (!strncmp((char *)tagbuff,ImageUniqueID,2)) {
     printf("ImageUniqueID: ");
@@ -153,7 +163,7 @@ void analyze_tag(FILE *f, int tiff) {
 }
 
 
-void analyze_IFD(FILE *f) {
+void analyze_IFD(FILE *f, int tiff) {
   unsigned char* ifdbuff;
   unsigned char* lenbuff;
   ifdbuff = calloc(2, sizeof(unsigned char));
@@ -166,10 +176,10 @@ void analyze_IFD(FILE *f) {
   free(lenbuff);
   free(ifdbuff);
   //printf("Number of tags is: %li\n", lint0);
-  int beginning_of_TIFF = ftell(f)-10;
+  
   while (lint0 > 0) {
     //printf("Analyzing tag.\n");
-    analyze_tag(f, beginning_of_TIFF);
+    analyze_tag(f, tiff);
     lint0--;
   }
 }
@@ -201,11 +211,13 @@ void analyze_tiff(FILE *f) {
   } else {
     printf("Magical error on magical string.\n");
   }
+  int beginning_of_TIFF = ftell(f)-8;
   if (!strncmp((char *)tiffbuff+10,offset, 4)) {
-    analyze_IFD(f); 
+    
+    analyze_IFD(f, beginning_of_TIFF); 
   } else {
-    printf("Offset is not 8\n");
-    analyze_IFD(f);
+    //printf("Offset is not 8\n");
+    analyze_IFD(f, beginning_of_TIFF);
   }
   free(tiffbuff);
   return;
