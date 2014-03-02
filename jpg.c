@@ -24,18 +24,18 @@ void print_tag(FILE *f, unsigned char * offsetbuff, int skip_offset, int length,
   unsigned char *buffer;
   if(skip_offset) {
     length = 4;
-    printf("%s", offsetbuff);
+    printf("%s\n", offsetbuff);
   } 
   else {  
     int offset = (int) tagLength(offsetbuff);
     int curr = ftell(f);
     //printf("current position: %d, offset from tiff: %d", curr, offset);
     curr -= tiff;
-    fseek(f,(offset-curr)-2,SEEK_CUR);    
+    fseek(f,(offset-curr),SEEK_CUR);    
     buffer = calloc(length, sizeof(char));
     if(fread(buffer,1,length,f) == length) {
       printf("%s\n", buffer);
-      fseek(f,-((offset-curr)-2),SEEK_CUR);
+      fseek(f,-(((offset-curr)+length)),SEEK_CUR);
       free(buffer);
     } else {
       printf("ERROR.");
@@ -49,8 +49,10 @@ void handle_exif(FILE *f, unsigned char * offsetbuff, int tiff) {
   int curr_pos = ftell(f);
   int offset = (int) tagLength(offsetbuff);
   curr_pos -= tiff;
-  fseek(f, (offset - curr_pos)-2, SEEK_CUR);
+  fseek(f, (offset - curr_pos), SEEK_CUR);
+  //printf("handleExif.\n");
   analyze_IFD(f);
+  
 }
 
 
@@ -86,8 +88,11 @@ void analyze_tag(FILE *f, int tiff) {
   offsetbuff = calloc(4, sizeof(char));
   
   fread(tagbuff, 1, 4, f);
+  //printf("tagbuff: %02X%02X%02X%02X\n", tagbuff[0], tagbuff[1], tagbuff[2], tagbuff[3]);
   fread(lenbuff, 1, 4, f);
+  //printf("lenbuff: %02X%02X%02X%02X\n", lenbuff[0], lenbuff[1], lenbuff[2], lenbuff[3]);
   fread(offsetbuff, 1, 4, f);
+  //printf("offsetbuff: %02X%02X%02X%02X\n", offsetbuff[0], offsetbuff[1], offsetbuff[2], offsetbuff[3]);
   length = (int) tagLength(lenbuff);
   int skip_offset = 0;
   if (length <= 4) {
@@ -95,6 +100,7 @@ void analyze_tag(FILE *f, int tiff) {
   }
   //retval = 1;
   if (!strncmp((char *)tagbuff,ExifIFD,2)) {
+    printf("Exif found.\n");
     handle_exif(f, offsetbuff, tiff);
   } else if (!strncmp((char *)tagbuff,DocName,2)) {
     printf("DocumentName: ");
@@ -160,7 +166,7 @@ void analyze_IFD(FILE *f) {
   free(lenbuff);
   free(ifdbuff);
   //printf("Number of tags is: %li\n", lint0);
-  int beginning_of_TIFF = ftell(f)-8;
+  int beginning_of_TIFF = ftell(f)-10;
   while (lint0 > 0) {
     //printf("Analyzing tag.\n");
     analyze_tag(f, beginning_of_TIFF);
@@ -199,6 +205,7 @@ void analyze_tiff(FILE *f) {
     analyze_IFD(f); 
   } else {
     printf("Offset is not 8\n");
+    analyze_IFD(f);
   }
   free(tiffbuff);
   return;
