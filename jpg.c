@@ -193,7 +193,7 @@ void analyze_tiff(FILE *f) {
   char offset[5] = {0x08, 0x00, 0x00, 0x00};
 
   unsigned char* tiffbuff;
-  tiffbuff = calloc(14, sizeof(unsigned char));
+  tiffbuff = calloc(15, sizeof(unsigned char));
   //this is endianness, 2 bytes
   fread(tiffbuff, 1, 14, f);
   //printf("Tiffbuff contents: %02X%02X\n", tiffbuff[0], tiffbuff[1]);
@@ -217,6 +217,8 @@ void analyze_tiff(FILE *f) {
     analyze_IFD(f, beginning_of_TIFF); 
   } else {
     //printf("Offset is not 8\n");
+    int offsetLength = tagLength(tiffbuff+10);
+    fseek(f, offsetLength-8, SEEK_CUR);
     analyze_IFD(f, beginning_of_TIFF);
   }
   free(tiffbuff);
